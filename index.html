@@ -3,57 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Платформер для мобильных</title>
+    <title>Змейка</title>
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #f0f0f0;
+            background-color: #000;
             font-family: Arial, sans-serif;
-            overflow: hidden;
         }
 
         .game-container {
-            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             height: 100vh;
-            position: relative;
-            overflow: hidden;
-            background-color: #87CEEB;
+            flex-direction: column;
         }
 
-        .player {
-            width: 50px;
-            height: 50px;
-            background-color: #FF5733;
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .ground {
-            width: 100%;
-            height: 50px;
-            background-color: #228B22;
-            position: absolute;
-            bottom: 0;
-        }
-
-        .coin {
-            width: 30px;
-            height: 30px;
-            background-color: gold;
-            border-radius: 50%;
-            position: absolute;
-            bottom: 60px;
-            left: 100px;
+        canvas {
+            border: 1px solid #fff;
+            background-color: #222;
         }
 
         .controls {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
-            text-align: center;
+            margin-top: 10px;
         }
 
         .control-btn {
@@ -71,121 +44,90 @@
         .control-btn:active {
             background-color: #45a049;
         }
-
-        .jump-btn {
-            background-color: #2196F3;
-        }
-
-        .jump-btn:active {
-            background-color: #1E88E5;
-        }
-
-        .score {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 24px;
-            color: white;
-            z-index: 10;
-        }
     </style>
 </head>
 <body>
 
 <div class="game-container">
-    <div class="player" id="player"></div>
-    <div class="ground"></div>
-    <div class="coin" id="coin"></div>
-    <div class="score" id="score">Монеты: 0</div>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
     <div class="controls">
         <button class="control-btn" id="left">←</button>
+        <button class="control-btn" id="up">↑</button>
         <button class="control-btn" id="right">→</button>
-        <button class="control-btn jump-btn" id="jump">↑</button>
+        <button class="control-btn" id="down">↓</button>
     </div>
 </div>
 
 <script>
-    // Инициализация элементов
-    const player = document.getElementById('player');
-    const coin = document.getElementById('coin');
-    const scoreDisplay = document.getElementById('score');
-    const leftBtn = document.getElementById('left');
-    const rightBtn = document.getElementById('right');
-    const jumpBtn = document.getElementById('jump');
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-    // Параметры игры
-    let playerX = window.innerWidth / 2 - 25;
-    let playerY = window.innerHeight - 100;
-    let isJumping = false;
+    const scale = 20; // Размер одной клетки
+    const rows = canvas.height / scale; // Количество строк
+    const columns = canvas.width / scale; // Количество столбцов
+
+    let snake = [{ x: 5, y: 5 }];
+    let direction = 'RIGHT'; // Начальная направленность змейки
+    let apple = spawnApple();
     let score = 0;
 
-    // Игровой процесс
-    function movePlayer() {
-        player.style.left = playerX + 'px';
-        player.style.bottom = playerY + 'px';
+    function spawnApple() {
+        let x = Math.floor(Math.random() * columns);
+        let y = Math.floor(Math.random() * rows);
+        return { x, y };
     }
 
-    function jump() {
-        if (!isJumping) {
-            isJumping = true;
-            let jumpHeight = 0;
-            let jumpInterval = setInterval(() => {
-                if (jumpHeight < 100) {
-                    playerY += 5;
-                    jumpHeight += 5;
-                } else if (jumpHeight >= 100 && jumpHeight < 200) {
-                    playerY -= 5;
-                    jumpHeight += 5;
-                } else {
-                    clearInterval(jumpInterval);
-                    isJumping = false;
-                }
-                movePlayer();
-            }, 20);
-        }
-    }
+    function update() {
+        let head = { ...snake[0] };
 
-    // Обработчики кнопок
-    leftBtn.addEventListener('click', () => {
-        playerX -= 10;
-        if (playerX < 0) playerX = 0;
-        movePlayer();
-    });
+        if (direction === 'UP') head.y -= 1;
+        if (direction === 'DOWN') head.y += 1;
+        if (direction === 'LEFT') head.x -= 1;
+        if (direction === 'RIGHT') head.x += 1;
 
-    rightBtn.addEventListener('click', () => {
-        playerX += 10;
-        if (playerX > window.innerWidth - 50) playerX = window.innerWidth - 50;
-        movePlayer();
-    });
+        snake.unshift(head);
 
-    jumpBtn.addEventListener('click', jump);
-
-    // Сбор монет
-    function checkCoinCollision() {
-        const playerRect = player.getBoundingClientRect();
-        const coinRect = coin.getBoundingClientRect();
-        if (
-            playerRect.left < coinRect.right &&
-            playerRect.right > coinRect.left &&
-            playerRect.top < coinRect.bottom &&
-            playerRect.bottom > coinRect.top
-        ) {
+        if (head.x === apple.x && head.y === apple.y) {
             score++;
-            scoreDisplay.textContent = `Монеты: ${score}`;
-            coin.style.left = Math.random() * (window.innerWidth - 30) + 'px';
-            coin.style.bottom = Math.random() * (window.innerHeight - 100) + 100 + 'px';
+            apple = spawnApple();
+        } else {
+            snake.pop();
+        }
+
+        if (head.x < 0 || head.y < 0 || head.x >= columns || head.y >= rows || checkCollision(head)) {
+            resetGame();
         }
     }
 
-    // Игровой цикл
-    function gameLoop() {
-        checkCoinCollision();
-        requestAnimationFrame(gameLoop);
+    function checkCollision(head) {
+        return snake.some((segment, index) => index !== 0 && segment.x === head.x && segment.y === head.y);
     }
 
-    // Запуск игры
-    gameLoop();
-</script>
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = 'green';
+        snake.forEach(segment => ctx.fillRect(segment.x * scale, segment.y * scale, scale, scale));
 
-</body>
-</html>
+        ctx.fillStyle = 'red';
+        ctx.fillRect(apple.x * scale, apple.y * scale, scale, scale);
+
+        ctx.fillStyle = 'white';
+        ctx.font = '16px Arial';
+        ctx.fillText('Score: ' + score, 10, 20);
+    }
+
+    function resetGame() {
+        snake = [{ x: 5, y: 5 }];
+        direction = 'RIGHT';
+        score = 0;
+        apple = spawnApple();
+    }
+
+    function changeDirection(event) {
+        if (event.keyCode === 37 && direction !== 'RIGHT') direction = 'LEFT';
+        if (event.keyCode === 38 && direction !== 'DOWN') direction = 'UP';
+        if (event.keyCode === 39 && direction !== 'LEFT') direction = 'RIGHT';
+        if (event.keyCode === 40 && direction !== 'UP') direction = 'DOWN';
+    }
+
+    function game
