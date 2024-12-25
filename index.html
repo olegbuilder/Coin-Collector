@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Платформер для мобильных</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            background-color: #87CEEB;
+        }
+
+        .player {
+            width: 50px;
+            height: 50px;
+            background-color: #FF5733;
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .ground {
+            width: 100%;
+            height: 50px;
+            background-color: #228B22;
+            position: absolute;
+            bottom: 0;
+        }
+
+        .coin {
+            width: 30px;
+            height: 30px;
+            background-color: gold;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 60px;
+            left: 100px;
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .control-btn {
+            width: 50px;
+            height: 50px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            margin: 5px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .control-btn:active {
+            background-color: #45a049;
+        }
+
+        .jump-btn {
+            background-color: #2196F3;
+        }
+
+        .jump-btn:active {
+            background-color: #1E88E5;
+        }
+
+        .score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            color: white;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="player" id="player"></div>
+    <div class="ground"></div>
+    <div class="coin" id="coin"></div>
+    <div class="score" id="score">Монеты: 0</div>
+    <div class="controls">
+        <button class="control-btn" id="left">←</button>
+        <button class="control-btn" id="right">→</button>
+        <button class="control-btn jump-btn" id="jump">↑</button>
+    </div>
+</div>
+
+<script>
+    // Инициализация элементов
+    const player = document.getElementById('player');
+    const coin = document.getElementById('coin');
+    const scoreDisplay = document.getElementById('score');
+    const leftBtn = document.getElementById('left');
+    const rightBtn = document.getElementById('right');
+    const jumpBtn = document.getElementById('jump');
+
+    // Параметры игры
+    let playerX = window.innerWidth / 2 - 25;
+    let playerY = window.innerHeight - 100;
+    let isJumping = false;
+    let score = 0;
+
+    // Игровой процесс
+    function movePlayer() {
+        player.style.left = playerX + 'px';
+        player.style.bottom = playerY + 'px';
+    }
+
+    function jump() {
+        if (!isJumping) {
+            isJumping = true;
+            let jumpHeight = 0;
+            let jumpInterval = setInterval(() => {
+                if (jumpHeight < 100) {
+                    playerY += 5;
+                    jumpHeight += 5;
+                } else if (jumpHeight >= 100 && jumpHeight < 200) {
+                    playerY -= 5;
+                    jumpHeight += 5;
+                } else {
+                    clearInterval(jumpInterval);
+                    isJumping = false;
+                }
+                movePlayer();
+            }, 20);
+        }
+    }
+
+    // Обработчики кнопок
+    leftBtn.addEventListener('click', () => {
+        playerX -= 10;
+        if (playerX < 0) playerX = 0;
+        movePlayer();
+    });
+
+    rightBtn.addEventListener('click', () => {
+        playerX += 10;
+        if (playerX > window.innerWidth - 50) playerX = window.innerWidth - 50;
+        movePlayer();
+    });
+
+    jumpBtn.addEventListener('click', jump);
+
+    // Сбор монет
+    function checkCoinCollision() {
+        const playerRect = player.getBoundingClientRect();
+        const coinRect = coin.getBoundingClientRect();
+        if (
+            playerRect.left < coinRect.right &&
+            playerRect.right > coinRect.left &&
+            playerRect.top < coinRect.bottom &&
+            playerRect.bottom > coinRect.top
+        ) {
+            score++;
+            scoreDisplay.textContent = `Монеты: ${score}`;
+            coin.style.left = Math.random() * (window.innerWidth - 30) + 'px';
+            coin.style.bottom = Math.random() * (window.innerHeight - 100) + 100 + 'px';
+        }
+    }
+
+    // Игровой цикл
+    function gameLoop() {
+        checkCoinCollision();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Запуск игры
+    gameLoop();
+</script>
+
+</body>
+</html>
